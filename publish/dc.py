@@ -31,7 +31,7 @@ def tags(*tags):
     a list of dictionaries in the format that the CKAN API 
     wants!
     """
-    return [{'name': t} for t in tags]
+    return [{'name': t.replace("'", "") } for t in tags]
 
 def fh_for_url(url):
     """
@@ -80,9 +80,17 @@ class Dataset(object):
         except ckanapi.errors.NotFound:
             pkg = ckan.action.package_create(**deets)    
 
+        print json.dumps(pkg, indent=2)
         for resource in resources:
             resource['package_id'] = pkg['id']
-            ckan.action.resource_create(**resource)
+            name = resource['name']
+            existing = [r for r in pkg['resources'] if r['name'] == name]
+            if not existing:
+                ckan.action.resource_create(**resource)
+            else:
+                existing = existing[0]
+                existing.update(resource)
+                ckan.action.resource_update(**existing)
         return
 
 
