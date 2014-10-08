@@ -59,3 +59,5 @@ target/
 # Application
 indicators_raw/*
 *.json
+config.ini
+*~
