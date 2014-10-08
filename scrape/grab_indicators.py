@@ -23,7 +23,7 @@ logging.basicConfig(filename='indicators.log',
 
 
 URL_TEMPLATE = "https://indicators.ic.nhs.uk/webview/velocity?v=2&mode=documentation&submode=ddi&study=http%3A%2F%2F172.16.9.26%3A80%2Fobj%2FfStudy%2FP{:05}"
-
+DATA_DIR = os.path.realpath(os.path.join('../', os.path.dirname(__file__)))
 
 def get_indicator(i, directory):
     """
@@ -92,7 +92,7 @@ def get_indicator(i, directory):
 
 if __name__ == '__main__':
     result = []
-    directory = 'indicators_raw'
+    directory = os.path.join(DATA_DIR, 'indicators_raw')
     filename = 'indicators.json'
     if not os.path.exists(directory):
         logging.info('Creating directory {}'.format(directory))
