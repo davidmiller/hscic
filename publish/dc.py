@@ -8,7 +8,7 @@ dc.py organization_purge hscic
 import ConfigParser
 import json
 import sys
-
+import logging
 import ffs
 from ffs.contrib import http
 import ckanapi
@@ -80,7 +80,7 @@ class Dataset(object):
         except ckanapi.errors.NotFound:
             pkg = ckan.action.package_create(**deets)    
 
-        print json.dumps(pkg, indent=2)
+        logging.info(json.dumps(pkg, indent=2))
         for resource in resources:
             resource['package_id'] = pkg['id']
             name = resource['name']
