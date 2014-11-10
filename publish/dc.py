@@ -1,7 +1,7 @@
 """
 Utility functions for  data harvesting
 
-Commandline usage can fire API calls with an ID e.g. 
+Commandline usage can fire API calls with an ID e.g.
 
 dc.py organization_purge hscic
 """
@@ -17,21 +17,30 @@ inifile = ffs.Path.here()/'../config.ini'
 CONF = ConfigParser.ConfigParser()
 CONF.read(inifile)
 
-ckan = ckanapi.RemoteCKAN(CONF.get('ckan', 'url'),  apikey=CONF.get('ckan', 'api_key'))
+ckan = ckanapi.RemoteCKAN(CONF.get('ckan', 'url'),
+                          apikey=CONF.get('ckan', 'api_key'))
 
-class Error(Exception): 
+
+PUBLISHERS = []
+GROUPS = []
+
+
+class Error(Exception):
     def __init__(self, msg):
         Exception.__init__(self, '\n\n\n{0}\n\n\n'.format(msg))
 
+
 class NHSEnglandNotFoundException(Error): pass
+
 
 def tags(*tags):
     """
     Given a list of tags as positional arguments TAGS, return
-    a list of dictionaries in the format that the CKAN API 
+    a list of dictionaries in the format that the CKAN API
     wants!
     """
     return [{'name': t.replace("'", "") } for t in tags]
+
 
 def fh_for_url(url):
     """
@@ -41,13 +50,15 @@ def fh_for_url(url):
 
 
 def _org_existsp(name):
-    orglist = ckan.action.organization_list()
-    return name in orglist
-        
+    global PUBLISHERS
+    if not PUBLISHERS:
+        PUBLISHERS = ckan.action.organization_list()
+    return name in PUBLISHERS
+
 
 def ensure_publisher(name):
     """
-    Ensure that the publisher NAME exists. 
+    Ensure that the publisher NAME exists.
     if not, attempt to create it from our settings file or COMPLAIN LOUDLY!
     """
     if _org_existsp(name):
@@ -62,11 +73,29 @@ def ensure_publisher(name):
         description=CONF.get('publisher:'+name, 'description'),
         image_url= CONF.get('publisher:'+name, 'image_url')
     )
-    return
+    PUBLISHERS.append(name)
+
+
+def ensure_group(title, publisher):
+    """
+    Ensures that a group NAME exists.
+    if not, attempt to create it or FUBAR.
+    """
+    name = title.replace(' ', '_').lower()
+    description = 'Datasets labelled as "{}" by the publisher, {}'.format(title, publisher)
+    global GROUPS
+    if not GROUPS:
+        GROUPS = ckan.action.group_list()
+    if name not in GROUPS:
+        ckan.action.group_create(name=name, title=title,
+                                 description=description)
+        GROUPS.append(name)
+    return name
+
 
 class Dataset(object):
     """
-    Not really a class. 
+    Not really a class.
 
     Namespaces are one honking...
     """
@@ -78,7 +107,7 @@ class Dataset(object):
             pkg.update(deets)
             ckan.action.package_update(**pkg)
         except ckanapi.errors.NotFound:
-            pkg = ckan.action.package_create(**deets)    
+            pkg = ckan.action.package_create(**deets)
 
         logging.info(json.dumps(pkg, indent=2))
         for resource in resources:
